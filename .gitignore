@@ -1,0 +1,12 @@
+vortex/results
+vortex/node_modules
+vortex/build
+vortex/cache
+vortex/artifacts
+eth-testnet/dependencies
+eth-testnet/network
+vortex-testnet/dependencies
+vortex-testnet/network
+vortex/package-lock.json
+.github
+.vscode
