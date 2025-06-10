@@ -135,7 +135,7 @@ for (( i=0; i<$NUM_NODES; i++ )); do
     $GETH_BINARY init --datadir=$NODE_DIR/execution $NODE_DIR/execution/genesis.json
 
     # Start geth execution client pinned to core $i
-    taskset -c $i $GETH_BINARY \
+    taskset -c $((2*LAYER1_NUM_NODES + i)) $GETH_BINARY \
       --pprof \
       --networkid=${CHAIN_ID:-32383} \
       --http --http.api=eth,net,web3 \
