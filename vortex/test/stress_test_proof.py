@@ -99,28 +99,35 @@ def sign_proof(proofID, nonce):
     base_fee = w3.to_wei(10, "gwei")
     tip = w3.to_wei(2, "gwei")
     max_fee = int(base_fee) + tip
+    
+    try:
+        fn = contract.functions.verifyProof(pi_a, pi_b, pi_c, pub_signals)
+        est = fn.estimate_gas({"from": acct.address})
 
-    fn = contract.functions.verifyProof(pi_a, pi_b, pi_c, pub_signals)
-    est = fn.estimate_gas({"from": acct.address})
+        print(f"Estimated Gas for Proof {proofID} :: {est}, Nonce :: {nonce}")
 
-    print(f"Estimated Gas for Proof {proofID} :: {est}, Nonce :: {nonce}")
-
-    tx = fn.build_transaction(
-        {
-            "from": acct.address,
-            "nonce": nonce,
-            "gas": est,
-            "maxFeePerGas": max_fee,
-            "maxPriorityFeePerGas": tip,
-        }
-    )
-    return proofID, acct.sign_transaction(tx)
+        tx = fn.build_transaction(
+            {
+                "from": acct.address,
+                "nonce": nonce,
+                "gas": est,
+                "maxFeePerGas": max_fee,
+                "maxPriorityFeePerGas": tip,
+            }
+        )
+        return proofID, acct.sign_transaction(tx)
+    except Exception as e:
+        print(f"Error signing proof {proofID}: Invalid Proof")
+        return proofID, None
 
 def sign_proofs(n):
     signed_txns = []
     base_nonce = w3.eth.get_transaction_count(acct.address, "pending")
     for i in range(n):
-        signed_txns.append(sign_proof(i if i<600 else 500, base_nonce + i))
+        signed_txn = sign_proof(i, base_nonce)
+        if signed_txn[1] is not None:
+            base_nonce += 1
+        signed_txns.append(signed_txn)
     return signed_txns
 
 def submit_proofs(signed_txns):
@@ -128,7 +135,7 @@ def submit_proofs(signed_txns):
     with ThreadPoolExecutor(max_workers=50) as executor:
         future_to_id = {
             executor.submit(w3.eth.send_raw_transaction, signed_tx.raw_transaction): proofID
-            for proofID, signed_tx in signed_txns
+            for proofID, signed_tx in signed_txns if signed_tx is not None
         }
 
         for future in as_completed(future_to_id):
@@ -175,7 +182,7 @@ def generate_results(start_block, end_block):
         
     total_blocks = len(block_details)
     
-    gas_used_per_block = sum(b["gasUsed"] for b in block_details)//total_blocks
+    gas_used_per_block = (sum(b["gasUsed"] for b in block_details)//total_blocks) if total_blocks > 0 else 0
 
     with open(os.path.join(READINGS_DIR, "block_details.csv"), "w", newline="") as f:
         writer = csv.DictWriter(
@@ -210,7 +217,7 @@ def generate_results(start_block, end_block):
             except:
                 print(f"Error parsing CPU profile {cpu_profile_file}")
     
-    cpu_usage = state_process_evm_time / (total_blocks*SLOT_DURATION)
+    cpu_usage = (state_process_evm_time / (total_blocks*SLOT_DURATION)) if total_blocks > 0 else 0
     
     print("======== FINAL REPORT ========")
     print(f"Blocks Used: {total_blocks}")
