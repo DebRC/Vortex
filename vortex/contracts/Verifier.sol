@@ -447,6 +447,13 @@ contract Groth16Verifier {
 
             // Validate all evaluations
             let isValid := checkPairing(_pA, _pB, _pC, _pubSignals, pMem)
+            if iszero(isValid) {
+                mstore(0, 0x08c379a0)
+                mstore(32, 32)
+                mstore(64, 22)
+                mstore(96, "Proof verification failed")
+                revert(0, 128)
+            }
 
             mstore(0, isValid)
              return(0, 0x20)
