@@ -10,7 +10,7 @@ module.exports = {
         },
         vortex: {
             url: process.env.RPC_URL_VORTEX,
-            accounts: [process.env.PRIVATE_KEY_1, process.env.PRIVATE_KEY_2, process.env.PRIVATE_KEY_3],
+            accounts: [process.env.PRIVATE_KEY_VORTEX],
         },
         
     },
